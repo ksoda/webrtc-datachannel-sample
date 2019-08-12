@@ -4,7 +4,8 @@
   "description": "[Live example](https://example.webrtc.ecl.ntt.com/p2p-data/index.html)",
   "main": "main.js",
   "scripts": {
-    "start": "parcel index.html"
+    "start": "parcel index.html",
+    "build": "parcel build index.html"
   },
   "keywords": [],
   "author": "",
