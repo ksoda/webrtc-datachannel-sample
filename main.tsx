@@ -58,7 +58,13 @@ const App: React.FC<{ peer: Peer }> = () => {
   return (
     <>
       {peerId ? <PeerField peer={peerId} /> : null}
-      remote: <input type="text" readOnly={!!conn} onBlur={updateConnection} />
+      remote:{" "}
+      <input
+        type="text"
+        readOnly={!!conn}
+        autoFocus
+        onBlur={updateConnection}
+      />
       <div>
         <button
           onClick={() => conn && sendMessage(conn)}
