@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    "target": "esnext",
+    "module": "commonjs",
+    "lib": ["dom", "es6"],
+    "jsx": "react"
+  }
+}

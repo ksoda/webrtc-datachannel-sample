@@ -1,0 +1,23 @@
+{
+  "name": "p2p-data",
+  "version": "1.0.0",
+  "description": "[Live example](https://example.webrtc.ecl.ntt.com/p2p-data/index.html)",
+  "main": "main.js",
+  "scripts": {
+    "start": "parcel index.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/react": "^16.9.1",
+    "@types/react-dom": "^16.8.5",
+    "parcel-bundler": "^1.12.3",
+    "typescript": "^3.5.3"
+  },
+  "dependencies": {
+    "react": "^16.9.0",
+    "react-dom": "^16.9.0",
+    "skyway-js": "^2.0.2"
+  }
+}
