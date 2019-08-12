@@ -134,6 +134,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.addEventListener("load", () => {
   notify("Hello");
+  if ("serviceWorker" in navigator && "PushManager" in window) {
+    console.log("Service Worker and Push is supported");
+
+    navigator.serviceWorker
+      .register("sw.js")
+      .then(function(swReg) {
+        console.log("Service Worker is registered", swReg);
+      })
+      .catch(function(error) {
+        console.error("Service Worker Error", error);
+      });
+  } else {
+    console.warn("Push messaging is not supported");
+  }
 });
 
 function notify(msg: string) {
@@ -141,7 +155,13 @@ function notify(msg: string) {
   if (!("Notification" in window)) {
     alert("Unsupported Browser");
   } else if (Notification.permission === "granted") {
-    new Notification(msg);
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.ready.then(function(registration) {
+        registration.showNotification(msg);
+      });
+    } else {
+      new Notification(msg);
+    }
   } else if (Notification.permission !== "denied") {
     Notification.requestPermission(function(permission) {
       if (permission === "granted") {
