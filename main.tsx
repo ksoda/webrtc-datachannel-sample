@@ -40,7 +40,9 @@ const App: React.FC<{ peer: Peer }> = () => {
     peer.on("connection", (dataConnection: DataConnection) => {
       console.debug("connection", dataConnection);
       setConnection(dataConnection);
-      bindConnectionEvent(dataConnection);
+      bindConnectionEvent(dataConnection, {
+        onClose: () => setConnection(null)
+      });
     });
   }, []);
   const updateConnection = useCallback(e => {
@@ -48,7 +50,7 @@ const App: React.FC<{ peer: Peer }> = () => {
     if (e.currentTarget.value.length === 0) return;
     const c = dataConnection(peer, e.currentTarget.value);
     if (c === undefined) return;
-    bindConnectionEvent(c);
+    bindConnectionEvent(c, { onClose: () => setConnection(null) });
     setConnection(c);
   }, []);
 
@@ -86,7 +88,10 @@ function dataConnection(
   return peer.connect(peerId);
 }
 
-function bindConnectionEvent(dataConnection: DataConnection) {
+function bindConnectionEvent(
+  dataConnection: DataConnection,
+  { onClose }: { onClose: Function }
+) {
   dataConnection.once("open", () => {
     console.info("DataConnection has been opened");
   });
@@ -96,8 +101,9 @@ function bindConnectionEvent(dataConnection: DataConnection) {
     notify(data);
   });
 
-  dataConnection.once("close", () => {
+  dataConnection.once("close", x => {
     console.info("DataConnection has been closed");
+    onClose(x);
   });
 }
 
