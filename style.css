@@ -1,0 +1,23 @@
+:root {
+  --background-color: whitesmoke;
+  --color: black;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: black;
+    --color: silver;
+  }
+}
+
+body,
+input[type="text"],
+button {
+  color: var(--color);
+  background-color: var(--background-color);
+}
+
+footer {
+  position: absolute;
+  bottom: 0;
+}

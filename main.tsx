@@ -1,3 +1,4 @@
+import "./style.css";
 import Peer, { DataConnection } from "skyway-js";
 import * as React from "react";
 import { useCallback, useState, useEffect, useRef } from "react";
@@ -59,19 +60,27 @@ const App: React.FC<{ peer: Peer }> = () => {
       {peerId ? <PeerField peer={peerId} /> : null}
       remote: <input type="text" readOnly={!!conn} onBlur={updateConnection} />
       <div>
-        <button onClick={() => conn && sendMessage(conn)}>Send</button>
-      </div>
-      {conn ? (
         <button
-          onClick={() => {
-            conn.close();
-            // if success
-            setConnection(null);
-          }}
+          onClick={() => conn && sendMessage(conn)}
+          style={{ fontSize: "xx-large", padding: ".5em 1em" }}
         >
-          Close
+          Send
         </button>
-      ) : null}
+      </div>
+      <footer>
+        {conn ? (
+          <button
+            onClick={() => {
+              conn.close();
+              // if success
+              setConnection(null);
+            }}
+            style={{ margin: "1em" }}
+          >
+            Close
+          </button>
+        ) : null}
+      </footer>
     </>
   );
 };
