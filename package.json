@@ -17,6 +17,7 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
+    "qs": "^6.7.0",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
     "skyway-js": "^2.0.2"

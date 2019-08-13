@@ -3,6 +3,7 @@ import Peer, { DataConnection } from "skyway-js";
 import * as React from "react";
 import { useCallback, useState, useEffect, useRef } from "react";
 import { render } from "react-dom";
+import qs from "qs";
 
 type PeerId = string;
 type Payload = string;
@@ -11,7 +12,7 @@ const peer = new Peer({
   debug: 3
 });
 
-const PeerField: React.FC<{ peer: PeerId }> = ({ peer }) => {
+const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
   const inputEl = useRef<HTMLInputElement | null>(null);
 
   const copy = useCallback(() => {
@@ -21,19 +22,21 @@ const PeerField: React.FC<{ peer: PeerId }> = ({ peer }) => {
   }, [inputEl]);
   return (
     <div>
-      peer: <input ref={inputEl} readOnly type="text" value={peer} />
+      peer: <input ref={inputEl} readOnly type="text" value={peer.toString()} />
       <button onClick={copy}> Copy </button>
     </div>
   );
 };
 
 const App: React.FC<{ peer: Peer }> = () => {
-  const [peerId, setPeerId] = useState<PeerId | null>(null);
+  const [selfURL, setSelfURL] = useState<URL | null>(null);
   const [conn, setConnection] = useState<DataConnection | null>(null);
   useEffect(() => {
     peer.once("open", (id: PeerId) => {
       console.info(id);
-      setPeerId(id);
+      const selfURL = new URL(location.toString());
+      selfURL.search = qs.stringify({ remote: id }, { addQueryPrefix: true });
+      setSelfURL(selfURL);
     });
     peer.on("error", console.error);
 
@@ -45,28 +48,27 @@ const App: React.FC<{ peer: Peer }> = () => {
         onClose: () => setConnection(null)
       });
     });
-  }, []);
-  const updateConnection = useCallback(e => {
-    if (!!conn) return;
-    if (e.currentTarget.value.length === 0) return;
-    const c = dataConnection(peer, e.currentTarget.value);
-    if (c === undefined) return;
-    bindConnectionEvent(c, { onClose: () => setConnection(null) });
-    setConnection(c);
+
+    const { remote } = qs.parse(location.search, { ignoreQueryPrefix: true });
+    console.log("remote", remote, peer);
+    if (!remote) return;
+    setTimeout(() => {
+      // Wait peer
+      if (!peer) console.error("Failed to Initialize Peer");
+      const c = dataConnection(peer, remote);
+      console.log("conn", c);
+      if (c === undefined) return;
+      bindConnectionEvent(c, { onClose: () => setConnection(null) });
+      setConnection(c);
+    }, 500);
   }, []);
 
   return (
     <>
-      {peerId ? <PeerField peer={peerId} /> : null}
-      remote:{" "}
-      <input
-        type="text"
-        readOnly={!!conn}
-        autoFocus
-        onBlur={updateConnection}
-      />
+      {selfURL ? <PeerField peer={selfURL} /> : null}
       <div>
         <button
+          disabled={!conn}
           onClick={() => conn && sendMessage(conn)}
           style={{ fontSize: "xx-large", padding: ".5em 1em" }}
         >
