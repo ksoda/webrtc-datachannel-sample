@@ -138,7 +138,7 @@ window.addEventListener("load", () => {
     Notification.permission !== "denied"
   )
     notify("Hello");
-  if ("serviceWorker" in navigator && "PushManager" in window) {
+  if (notificationSupported()) {
     console.log("Service Worker and Push is supported");
 
     navigator.serviceWorker
@@ -156,21 +156,24 @@ window.addEventListener("load", () => {
 
 function notify(msg: string) {
   if (process.env.__DEV__) return console.log(msg);
-  if (!("Notification" in window)) {
-    alert("Unsupported Browser");
-  } else if (Notification.permission === "granted") {
-    if ("serviceWorker" in navigator && "PushManager" in window) {
+  if (!notificationSupported()) return alert(msg);
+  switch (Notification.permission) {
+    case "denied":
+      alert(msg);
+      break;
+    case "granted":
       navigator.serviceWorker.ready.then(function(registration) {
         registration.showNotification(msg);
       });
-    } else {
-      new Notification(msg);
-    }
-  } else if (Notification.permission !== "denied") {
-    Notification.requestPermission(function(permission) {
-      if (permission === "granted") {
-        notify(msg);
-      }
-    });
+      break;
+    case "default":
+      Notification.requestPermission(function(permission) {
+        if (permission === "granted") notify(msg);
+      });
+      break;
   }
+}
+
+function notificationSupported(): boolean {
+  return "serviceWorker" in navigator && "PushManager" in window;
 }
