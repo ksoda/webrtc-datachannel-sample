@@ -1,3 +1,3 @@
 # P2P Data
 
-[Live example](https://example.webrtc.ecl.ntt.com/p2p-data/index.html)
+[Live example](https://vigilant-saha-2884d8.netlify.com/)
