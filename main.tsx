@@ -133,7 +133,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("load", () => {
-  notify("Hello");
+  if (
+    Notification.permission !== "granted" &&
+    Notification.permission !== "denied"
+  )
+    notify("Hello");
   if ("serviceWorker" in navigator && "PushManager" in window) {
     console.log("Service Worker and Push is supported");
 
