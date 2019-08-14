@@ -87,7 +87,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
 
 function bindConnectionEvent(
   dataConnection: DataConnection,
-  { onClose }: { onClose: Function }
+  { onClose }: { onClose: () => void }
 ) {
   dataConnection.once("open", () => {
     console.info("DataConnection has been opened");
@@ -98,9 +98,9 @@ function bindConnectionEvent(
     notify(data);
   });
 
-  dataConnection.once("close", x => {
+  dataConnection.once("close", () => {
     console.info("DataConnection has been closed");
-    onClose(x);
+    onClose();
   });
 }
 
