@@ -7,10 +7,6 @@ import qs from "qs";
 
 type PeerId = string;
 type Payload = string;
-const peer = new Peer({
-  key: process.env.SKYWAY_KEY!,
-  debug: 3
-});
 
 const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
   const inputEl = useRef<HTMLInputElement | null>(null);
@@ -28,7 +24,7 @@ const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
   );
 };
 
-const App: React.FC<{ peer: Peer }> = () => {
+const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const [selfURL, setSelfURL] = useState<URL | null>(null);
   const [conn, setConnection] = useState<DataConnection | null>(null);
   useEffect(() => {
@@ -37,6 +33,15 @@ const App: React.FC<{ peer: Peer }> = () => {
       const selfURL = new URL(location.toString());
       selfURL.search = qs.stringify({ remote: id }, { addQueryPrefix: true });
       setSelfURL(selfURL);
+
+      const { remote } = qs.parse(location.search, { ignoreQueryPrefix: true });
+      if (!remote) {
+        console.info("Failed to Initialize Peer");
+        return;
+      }
+      const c = peer.connect(remote);
+      bindConnectionEvent(c, { onClose: () => setConnection(null) });
+      setConnection(c);
     });
     peer.on("error", console.error);
 
@@ -48,19 +53,6 @@ const App: React.FC<{ peer: Peer }> = () => {
         onClose: () => setConnection(null)
       });
     });
-
-    const { remote } = qs.parse(location.search, { ignoreQueryPrefix: true });
-    console.log("remote", remote, peer);
-    if (!remote) return;
-    setTimeout(() => {
-      // Wait peer
-      if (!peer) console.error("Failed to Initialize Peer");
-      const c = dataConnection(peer, remote);
-      console.log("conn", c);
-      if (c === undefined) return;
-      bindConnectionEvent(c, { onClose: () => setConnection(null) });
-      setConnection(c);
-    }, 500);
   }, []);
 
   return (
@@ -85,25 +77,13 @@ const App: React.FC<{ peer: Peer }> = () => {
             }}
             style={{ margin: "1em" }}
           >
-            Close
+            Close Connection
           </button>
         ) : null}
       </footer>
     </>
   );
 };
-
-function dataConnection(
-  peer: Peer,
-  peerId: PeerId
-): DataConnection | undefined {
-  // Note that you need to ensure the peer has connected to signaling server
-  // before using methods of peer instance.
-  if (!peer.open) {
-    return;
-  }
-  return peer.connect(peerId);
-}
 
 function bindConnectionEvent(
   dataConnection: DataConnection,
@@ -131,6 +111,10 @@ function sendMessage(dataConnection: DataConnection) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const peer = new Peer({
+    key: process.env.SKYWAY_KEY!,
+    debug: 3
+  });
   render(<App peer={peer} />, document.querySelector("main"));
 });
 
