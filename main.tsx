@@ -8,22 +8,6 @@ import qs from "qs";
 type PeerId = string;
 type Payload = string;
 
-const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
-  const inputEl = useRef<HTMLInputElement | null>(null);
-
-  const copy = useCallback(() => {
-    if (!inputEl.current) return;
-    inputEl.current.select();
-    document.execCommand("copy");
-  }, [inputEl]);
-  return (
-    <div>
-      peer: <input ref={inputEl} readOnly type="text" value={peer.toString()} />
-      <button onClick={copy}> Copy </button>
-    </div>
-  );
-};
-
 const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const [selfURL, setSelfURL] = useState<URL | null>(null);
   const [conn, setConnection] = useState<DataConnection | null>(null);
@@ -58,15 +42,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   return (
     <>
       {selfURL ? <PeerField peer={selfURL} /> : null}
-      <div>
-        <button
-          disabled={!conn}
-          onClick={() => conn && sendMessage(conn)}
-          style={{ fontSize: "xx-large", padding: ".5em 1em" }}
-        >
-          Send
-        </button>
-      </div>
+      <Timer callback={() => broadcast("Time's Up", conn)} initialTime={5} />,
       <footer>
         {conn ? (
           <button
@@ -84,6 +60,70 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
     </>
   );
 };
+
+const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
+  const inputEl = useRef<HTMLInputElement | null>(null);
+
+  const copy = useCallback(() => {
+    if (!inputEl.current) return;
+    inputEl.current.select();
+    document.execCommand("copy");
+  }, [inputEl]);
+  return (
+    <div>
+      peer: <input ref={inputEl} readOnly type="text" value={peer.toString()} />
+      <button onClick={copy}> Copy </button>
+    </div>
+  );
+};
+
+const Timer: React.FC<{ initialTime: number; callback: Function }> = ({
+  initialTime,
+  callback
+}) => {
+  const [currentTime, updateTime] = useState(initialTime);
+  const [playing, togglePlaying] = useState(false);
+  const reset = (e: React.MouseEvent) => {
+    e.preventDefault();
+    updateTime(initialTime);
+  };
+  const toggle = () => {
+    console.debug(playing);
+    togglePlaying(!playing);
+  };
+
+  useEffect(() => {
+    if (currentTime == 0) callback();
+    if (currentTime < 1) return;
+    if (!playing) return;
+    const timerId = setInterval(() => updateTime(currentTime - 1), 1000);
+
+    return function cleanup() {
+      clearInterval(timerId);
+    };
+  }, [currentTime, playing]);
+
+  return (
+    <button
+      onClick={toggle}
+      onContextMenu={reset}
+      {...useLongPress(reset, 1000)}
+      style={{ fontSize: "6em", padding: "5% 20%" }}
+    >
+      <span>{currentTime}</span>
+      <span
+        style={{ transition: "all 1s", opacity: currentTime % 2 == 0 ? 1 : 0 }}
+      >
+        .
+      </span>
+    </button>
+  );
+};
+
+function broadcast(msg: string, conn: DataConnection | null) {
+  notify(msg);
+  if (conn) sendMessage(msg, conn);
+}
 
 function bindConnectionEvent(
   dataConnection: DataConnection,
@@ -104,10 +144,49 @@ function bindConnectionEvent(
   });
 }
 
-function sendMessage(dataConnection: DataConnection) {
-  const data: Payload = "Ping";
-  dataConnection.send(data);
-  console.debug(`You: ${data}`);
+function sendMessage(msg: Payload, dataConnection: DataConnection) {
+  dataConnection.send(msg);
+  console.debug(`You: ${msg}`);
+}
+
+function notify(msg: string) {
+  if (process.env.__DEV__) return console.log(msg);
+  if (!notificationSupported()) return alert(msg);
+  switch (Notification.permission) {
+    case "denied":
+      alert(msg);
+      break;
+    case "granted":
+      navigator.serviceWorker.ready.then(function(registration) {
+        registration.showNotification(msg);
+      });
+      break;
+    case "default":
+      Notification.requestPermission(function(permission) {
+        if (permission === "granted") notify(msg);
+      });
+      break;
+  }
+}
+
+function notificationSupported(): boolean {
+  return "serviceWorker" in navigator && "PushManager" in window;
+}
+
+function useLongPress(callback: Function, ms = 1000) {
+  const [startLongPress, setStartLongPress] = useState(false);
+
+  useEffect(() => {
+    const timerId = startLongPress ? setTimeout(callback, ms) : null;
+    return function cleanup() {
+      timerId && clearTimeout(timerId);
+    };
+  }, [startLongPress]);
+
+  return {
+    onTouchStart: () => setStartLongPress(true),
+    onTouchEnd: () => setStartLongPress(false)
+  };
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -139,27 +218,3 @@ window.addEventListener("load", () => {
     console.warn("Push messaging is not supported");
   }
 });
-
-function notify(msg: string) {
-  if (process.env.__DEV__) return console.log(msg);
-  if (!notificationSupported()) return alert(msg);
-  switch (Notification.permission) {
-    case "denied":
-      alert(msg);
-      break;
-    case "granted":
-      navigator.serviceWorker.ready.then(function(registration) {
-        registration.showNotification(msg);
-      });
-      break;
-    case "default":
-      Notification.requestPermission(function(permission) {
-        if (permission === "granted") notify(msg);
-      });
-      break;
-  }
-}
-
-function notificationSupported(): boolean {
-  return "serviceWorker" in navigator && "PushManager" in window;
-}
