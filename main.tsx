@@ -6,11 +6,14 @@ import { render } from "react-dom";
 import qs from "qs";
 
 type PeerId = string;
-type Payload = string;
+type Payload =
+  | { control: false; body: string }
+  | { control: true; body: number };
 
 const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const [selfURL, setSelfURL] = useState<URL | null>(null);
   const [conn, setConnection] = useState<DataConnection | null>(null);
+  const [remoteTime, setRemoteTime] = useState<number | null>(null);
   useEffect(() => {
     peer.once("open", (id: PeerId) => {
       console.info(id);
@@ -24,7 +27,12 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
         return;
       }
       const c = peer.connect(remote);
-      bindConnectionEvent(c, { onClose: () => setConnection(null) });
+      bindConnectionEvent(c, {
+        onClose: () => setConnection(null),
+        onRemoteUpdate: t => {
+          setRemoteTime(t);
+        }
+      });
       setConnection(c);
     });
     peer.on("error", console.error);
@@ -34,7 +42,10 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
       console.debug("connection", dataConnection);
       setConnection(dataConnection);
       bindConnectionEvent(dataConnection, {
-        onClose: () => setConnection(null)
+        onClose: () => setConnection(null),
+        onRemoteUpdate: t => {
+          setRemoteTime(t);
+        }
       });
     });
   }, []);
@@ -42,13 +53,20 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   return (
     <>
       {selfURL ? <PeerField peer={selfURL} /> : null}
-      <Timer callback={() => broadcast("Time's Up", conn)} initialTime={5} />,
+      <Timer
+        callback={() => broadcast("Time's Up", conn)}
+        tick={t => {
+          console.log("tick", t);
+          conn && sendMessage({ control: true, body: t }, conn);
+        }}
+        initialTime={5}
+        show={remoteTime}
+      />
       <footer>
         {conn ? (
           <button
             onClick={() => {
               conn.close();
-              // if success
               setConnection(null);
             }}
             style={{ margin: "1em" }}
@@ -77,10 +95,12 @@ const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
   );
 };
 
-const Timer: React.FC<{ initialTime: number; callback: Function }> = ({
-  initialTime,
-  callback
-}) => {
+const Timer: React.FC<{
+  initialTime: number;
+  callback: Function;
+  tick: (t: number) => void;
+  show: number | null;
+}> = ({ initialTime, callback, tick, show }) => {
   const [currentTime, updateTime] = useState(initialTime);
   const [playing, togglePlaying] = useState(false);
   const reset = (e: React.MouseEvent) => {
@@ -93,10 +113,13 @@ const Timer: React.FC<{ initialTime: number; callback: Function }> = ({
   };
 
   useEffect(() => {
+    tick(currentTime);
     if (currentTime == 0) callback();
     if (currentTime < 1) return;
     if (!playing) return;
-    const timerId = setInterval(() => updateTime(currentTime - 1), 1000);
+    const timerId = setInterval(() => {
+      updateTime(currentTime - 1);
+    }, 1000);
 
     return function cleanup() {
       clearInterval(timerId);
@@ -110,7 +133,7 @@ const Timer: React.FC<{ initialTime: number; callback: Function }> = ({
       {...useLongPress(reset, 1000)}
       style={{ fontSize: "6em", padding: "5% 20%" }}
     >
-      <span>{currentTime}</span>
+      <span>{show || currentTime}</span>
       <span
         style={{ transition: "all 1s", opacity: currentTime % 2 == 0 ? 1 : 0 }}
       >
@@ -122,12 +145,15 @@ const Timer: React.FC<{ initialTime: number; callback: Function }> = ({
 
 function broadcast(msg: string, conn: DataConnection | null) {
   notify(msg);
-  if (conn) sendMessage(msg, conn);
+  if (conn) sendMessage({ control: false, body: msg }, conn);
 }
 
 function bindConnectionEvent(
   dataConnection: DataConnection,
-  { onClose }: { onClose: () => void }
+  {
+    onClose,
+    onRemoteUpdate
+  }: { onClose: () => void; onRemoteUpdate: (b: number) => void }
 ) {
   dataConnection.once("open", () => {
     console.info("DataConnection has been opened");
@@ -135,7 +161,8 @@ function bindConnectionEvent(
 
   dataConnection.on("data", (data: Payload) => {
     console.debug(`Remote: ${data}`);
-    notify(data);
+    if (!data.control) notify(data.body);
+    else onRemoteUpdate(data.body);
   });
 
   dataConnection.once("close", () => {
