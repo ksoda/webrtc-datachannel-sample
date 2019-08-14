@@ -14,10 +14,11 @@ const lengthUnit = 60;
 
 let resetTimer: (n: number) => unknown;
 const App: React.FC<{ peer: Peer }> = ({ peer }) => {
+  const lengthMin = 1;
   const [selfURL, setSelfURL] = useState<URL | null>(null);
   const [conn, setConnection] = useState<DataConnection | null>(null);
   const [remoteTime, setRemoteTime] = useState<number | null>(null);
-  const [length, setLength] = useState(lengthUnit);
+  const [length, setLength] = useState(lengthMin);
   useEffect(() => {
     peer.once("open", (id: PeerId) => {
       console.info(id);
@@ -70,7 +71,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
         <input
           type="range"
           value={length}
-          min="1"
+          min={lengthMin}
           max="15"
           onChange={e => {
             const l = parseInt(e.currentTarget.value, 10);
