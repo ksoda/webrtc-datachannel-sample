@@ -10,10 +10,14 @@ type Payload =
   | { control: false; body: string }
   | { control: true; body: number };
 
+const lengthUnit = 60;
+
+let resetTimer: (n: number) => unknown;
 const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const [selfURL, setSelfURL] = useState<URL | null>(null);
   const [conn, setConnection] = useState<DataConnection | null>(null);
   const [remoteTime, setRemoteTime] = useState<number | null>(null);
+  const [length, setLength] = useState(lengthUnit);
   useEffect(() => {
     peer.once("open", (id: PeerId) => {
       console.info(id);
@@ -59,10 +63,28 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
           console.log("tick", t);
           conn && sendMessage({ control: true, body: t }, conn);
         }}
-        initialTime={5}
+        initialTime={length}
         show={remoteTime}
       />
       <footer>
+        <input
+          type="range"
+          value={length}
+          min="1"
+          max="15"
+          onChange={e => {
+            const l = parseInt(e.currentTarget.value, 10);
+            setLength(l);
+            resetTimer(l * lengthUnit);
+          }}
+          list="tickmarks"
+        />
+        <datalist id="tickmarks">
+          <option value="1" />
+          <option value="5" />
+          <option value="10" />
+          <option value="15" />
+        </datalist>
         {conn ? (
           <button
             onClick={() => {
@@ -101,17 +123,20 @@ const Timer: React.FC<{
   tick: (t: number) => void;
   show: number | null;
 }> = ({ initialTime, callback, tick, show }) => {
-  const [currentTime, updateTime] = useState(initialTime);
+  const len = initialTime * lengthUnit;
+  const [currentTime, updateTime] = useState(len);
   const [playing, togglePlaying] = useState(false);
   const reset = (e: React.MouseEvent) => {
     e.preventDefault();
-    updateTime(initialTime);
+    updateTime(len);
   };
   const toggle = () => {
     console.debug(playing);
     togglePlaying(!playing);
   };
 
+  console.log(initialTime);
+  resetTimer = useCallback(x => updateTime(x), []);
   useEffect(() => {
     tick(currentTime);
     if (currentTime == 0) callback();
