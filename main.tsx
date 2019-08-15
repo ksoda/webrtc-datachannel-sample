@@ -10,8 +10,12 @@ type Payload =
   | { control: false; body: string }
   | { control: true; body: number };
 
-const lengthUnit = 60;
+type DataConnectionCallbacks = {
+  onClose: () => void;
+  onRemoteUpdate: (b: number) => void;
+};
 
+const lengthUnit = 60;
 let resetTimer: (n: number) => unknown;
 const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const lengthMin = 1;
@@ -20,6 +24,12 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const [remoteTime, setRemoteTime] = useState<number | null>(null);
   const [length, setLength] = useState(lengthMin);
   useEffect(() => {
+    const callbacks: DataConnectionCallbacks = {
+      onClose: () => setConnection(null),
+      onRemoteUpdate: t => {
+        setRemoteTime(t);
+      }
+    };
     peer.once("open", (id: PeerId) => {
       console.info(id);
       const selfURL = new URL(location.toString());
@@ -32,12 +42,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
         return;
       }
       const c = peer.connect(remote);
-      bindConnectionEvent(c, {
-        onClose: () => setConnection(null),
-        onRemoteUpdate: t => {
-          setRemoteTime(t);
-        }
-      });
+      bindConnectionEvent(c, callbacks);
       setConnection(c);
     });
     peer.on("error", console.error);
@@ -46,12 +51,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
     peer.on("connection", (dataConnection: DataConnection) => {
       console.debug("connection", dataConnection);
       setConnection(dataConnection);
-      bindConnectionEvent(dataConnection, {
-        onClose: () => setConnection(null),
-        onRemoteUpdate: t => {
-          setRemoteTime(t);
-        }
-      });
+      bindConnectionEvent(dataConnection, callbacks);
     });
   }, []);
 
@@ -189,10 +189,7 @@ function broadcast(msg: string, conn: DataConnection | null) {
 
 function bindConnectionEvent(
   dataConnection: DataConnection,
-  {
-    onClose,
-    onRemoteUpdate
-  }: { onClose: () => void; onRemoteUpdate: (b: number) => void }
+  { onClose, onRemoteUpdate }: DataConnectionCallbacks
 ) {
   dataConnection.once("open", () => {
     console.info("DataConnection has been opened");
