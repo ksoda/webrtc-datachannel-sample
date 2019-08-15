@@ -67,24 +67,6 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
         initialTime={length}
       />
       <footer>
-        <input
-          type="range"
-          value={length}
-          min={lengthMin}
-          max="15"
-          onChange={e => {
-            const l = parseInt(e.currentTarget.value, 10);
-            setLength(l);
-            resetTimer(l * lengthUnit);
-          }}
-          list="tickmarks"
-        />
-        <datalist id="tickmarks">
-          <option value="1" />
-          <option value="5" />
-          <option value="10" />
-          <option value="15" />
-        </datalist>
         {conn ? (
           <button
             onClick={() => {
@@ -95,8 +77,41 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
           >
             Close Connection
           </button>
-        ) : null}
+        ) : (
+          <LengthField
+            value={length}
+            onChange={e => {
+              const l = parseInt(e.currentTarget.value, 10);
+              setLength(l);
+              resetTimer(l * lengthUnit);
+            }}
+          />
+        )}
       </footer>
+    </>
+  );
+};
+
+const LengthField: React.FC<{
+  value: number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({ value, onChange }) => {
+  return (
+    <>
+      <input
+        type="range"
+        value={value}
+        min="1"
+        max="15"
+        onChange={onChange}
+        list="tickmarks"
+      />
+      <datalist id="tickmarks">
+        <option value="1" />
+        <option value="5" />
+        <option value="10" />
+        <option value="15" />
+      </datalist>
     </>
   );
 };
