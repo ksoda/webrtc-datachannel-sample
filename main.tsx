@@ -21,13 +21,13 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const lengthMin = 1;
   const [selfURL, setSelfURL] = useState<URL | null>(null);
   const [conn, setConnection] = useState<DataConnection | null>(null);
+  const [remoteTime, setRemoteTime] = useState<number | null>(null);
   const [length, setLength] = useState(lengthMin);
   useEffect(() => {
     const callbacks: DataConnectionCallbacks = {
       onClose: () => setConnection(null),
       onRemoteUpdate: t => {
-        // setRemoteTime(t);
-        resetTimer(t);
+        setRemoteTime(t);
       }
     };
     peer.once("open", (id: PeerId) => {
@@ -65,6 +65,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
           conn && sendMessage({ control: true, body: t }, conn);
         }}
         initialTime={length}
+        show={remoteTime}
       />
       <footer>
         {conn ? (
@@ -149,7 +150,8 @@ const Timer: React.FC<{
   initialTime: number;
   callback: Function;
   tick: (t: number) => void;
-}> = ({ initialTime, callback, tick }) => {
+  show: number | null;
+}> = ({ initialTime, callback, tick, show }) => {
   const len = initialTime * lengthUnit;
   const [currentTime, updateTime] = useState(len);
   const [playing, togglePlaying] = useState(false);
@@ -185,7 +187,7 @@ const Timer: React.FC<{
       {...useLongPress(reset, 1000)}
       style={{ fontSize: "6em", padding: "5% 20%" }}
     >
-      <span>{currentTime}</span>
+      <span>{show || currentTime}</span>
       <span
         style={{ transition: "all 1s", opacity: currentTime % 2 == 0 ? 1 : 0 }}
       >
