@@ -57,7 +57,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
 
   return (
     <>
-      {selfURL ? <PeerField peer={selfURL} /> : null}
+      {selfURL ? <PeerField peer={selfURL} autoFocus={true} /> : null}
       <Timer
         callback={() => broadcast("Time's Up", conn)}
         tick={t => {
@@ -102,7 +102,10 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   );
 };
 
-const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
+const PeerField: React.FC<{ peer: URL; autoFocus: boolean }> = ({
+  autoFocus,
+  peer
+}) => {
   const inputEl = useRef<HTMLInputElement | null>(null);
 
   const copy = useCallback(() => {
@@ -113,7 +116,10 @@ const PeerField: React.FC<{ peer: URL }> = ({ peer }) => {
   return (
     <div>
       peer: <input ref={inputEl} readOnly type="text" value={peer.toString()} />
-      <button onClick={copy}> Copy </button>
+      <button autoFocus={autoFocus} onClick={copy}>
+        {" "}
+        Copy{" "}
+      </button>
     </div>
   );
 };
