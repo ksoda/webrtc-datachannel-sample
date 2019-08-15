@@ -113,6 +113,10 @@ const PeerField: React.FC<{ peer: URL; autoFocus: boolean }> = ({
     inputEl.current.select();
     document.execCommand("copy");
   }, [inputEl]);
+  const share: (
+    o: Partial<{ [K in "url" | "text" | "title"]: string }>
+  ) => unknown | null =
+    (navigator as any).share && (navigator as any).share.bind(navigator);
   return (
     <div>
       peer: <input ref={inputEl} readOnly type="text" value={peer.toString()} />
@@ -120,6 +124,9 @@ const PeerField: React.FC<{ peer: URL; autoFocus: boolean }> = ({
         {" "}
         Copy{" "}
       </button>
+      {share ? (
+        <button onClick={() => share({ url: peer.toString() })}>Share</button>
+      ) : null}
     </div>
   );
 };
