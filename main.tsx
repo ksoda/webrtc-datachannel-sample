@@ -23,6 +23,8 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
   const [conn, setConnection] = useState<DataConnection | null>(null);
   const [remoteTime, setRemoteTime] = useState<number | null>(null);
   const [length, setLength] = useState(lengthMin);
+  const [lockState, lock] = useState(false);
+
   useEffect(() => {
     const callbacks: DataConnectionCallbacks = {
       onClose: () => setConnection(null),
@@ -44,6 +46,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
       const c = peer.connect(remote);
       bindConnectionEvent(c, callbacks);
       setConnection(c);
+      lock(true);
     });
     peer.on("error", console.error);
 
@@ -66,6 +69,7 @@ const App: React.FC<{ peer: Peer }> = ({ peer }) => {
         }}
         initialTime={length}
         show={remoteTime}
+        lock={lockState}
       />
       <footer>
         {conn ? (
@@ -151,7 +155,8 @@ const Timer: React.FC<{
   callback: Function;
   tick: (t: number) => void;
   show: number | null;
-}> = ({ initialTime, callback, tick, show }) => {
+  lock: boolean;
+}> = ({ initialTime, callback, tick, show, lock }) => {
   const len = initialTime * lengthUnit;
   const [currentTime, updateTime] = useState(len);
   const [playing, togglePlaying] = useState(false);
@@ -182,6 +187,7 @@ const Timer: React.FC<{
 
   return (
     <button
+      disabled={lock}
       onClick={toggle}
       onContextMenu={reset}
       {...useLongPress(reset, 1000)}
@@ -191,7 +197,7 @@ const Timer: React.FC<{
       <span
         style={{ transition: "all 1s", opacity: currentTime % 2 == 0 ? 1 : 0 }}
       >
-        .
+        .{lock && "🔒"}
       </span>
     </button>
   );
